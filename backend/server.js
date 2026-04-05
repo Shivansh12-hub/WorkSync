@@ -5,6 +5,7 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 import startReminderJob from "./jobs/reminder.job.js";
 import startAutoArchiveJob from "./jobs/autoArchive.job.js";
+import { startMissedUpdateAlertJob } from "./jobs/missedUpdateAlert.job.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,7 @@ try {
   await connectDB();
   startReminderJob();
   startAutoArchiveJob();
+  startMissedUpdateAlertJob();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

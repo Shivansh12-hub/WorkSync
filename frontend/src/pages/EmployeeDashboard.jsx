@@ -4,6 +4,7 @@ import DashboardLayout from "../components/layout/DashboardLayout";
 import StatsCard from "../components/dashboard/StatsCard";
 import UpdateTable from "../components/dashboard/UpdateTable";
 import UpdateForm from "../components/forms/UpdateForm";
+import EditUpdateForm from "../components/forms/EditUpdateForm";
 import { toast } from "sonner";
 import { X, MessageCircle } from "lucide-react";
 
@@ -15,6 +16,7 @@ export default function EmployeeDashboard() {
   const [selectedUpdate, setSelectedUpdate] = useState(null);
   const [feedbackList, setFeedbackList] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [editingUpdate, setEditingUpdate] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -86,6 +88,8 @@ export default function EmployeeDashboard() {
             updates={updates}
             onSelectUpdate={handleViewFeedback}
             showFeedbackButton={true}
+            isEmployeeDashboard={true}
+            onEdit={setEditingUpdate}
           />
         </>
       )}
@@ -169,6 +173,15 @@ export default function EmployeeDashboard() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Edit Update Modal */}
+      {editingUpdate && (
+        <EditUpdateForm
+          update={editingUpdate}
+          onClose={() => setEditingUpdate(null)}
+          onUpdateSuccess={fetchData}
+        />
       )}
     </DashboardLayout>
   );

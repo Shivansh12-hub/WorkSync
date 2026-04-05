@@ -1,10 +1,12 @@
-import { MessageSquare, Eye } from "lucide-react";
+import { MessageSquare, Eye, Edit2 } from "lucide-react";
 
 export default function UpdateTable({
   updates,
   onSelectUpdate,
   showActions,
   showFeedbackButton,
+  onEdit,
+  isEmployeeDashboard,
 }) {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString();
@@ -23,7 +25,7 @@ export default function UpdateTable({
     }
   };
 
-  const showActionColumn = showActions || showFeedbackButton;
+  const showActionColumn = showActions || showFeedbackButton || isEmployeeDashboard;
 
   return (
     <div className="bg-white shadow rounded-xl p-5 mt-6 overflow-x-auto">
@@ -40,6 +42,7 @@ export default function UpdateTable({
               <th className="text-center py-3 px-2">Hours</th>
               <th className="text-center py-3 px-2">Status</th>
               <th className="text-center py-3 px-2">Date</th>
+              <th className="text-center py-3 px-2">Version</th>
               {showActionColumn && <th className="text-center py-3 px-2">Action</th>}
             </tr>
           </thead>
@@ -65,8 +68,20 @@ export default function UpdateTable({
                 <td className="text-center py-3 px-2 text-sm">
                   {formatDate(item.createdAt)}
                 </td>
+                <td className="text-center py-3 px-2 text-sm text-gray-600">
+                  v{item.version || 1}
+                </td>
                 {showActionColumn && (
-                  <td className="text-center py-3 px-2">
+                  <td className="text-center py-3 px-2 flex justify-center gap-2">
+                    {isEmployeeDashboard && (
+                      <button
+                        onClick={() => onEdit && onEdit(item)}
+                        className="inline-flex items-center gap-1 text-purple-600 hover:text-purple-900 font-medium"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Edit
+                      </button>
+                    )}
                     {showFeedbackButton ? (
                       <button
                         onClick={() => onSelectUpdate && onSelectUpdate(item)}
@@ -75,7 +90,7 @@ export default function UpdateTable({
                         <Eye className="w-4 h-4" />
                         View Feedback
                       </button>
-                    ) : (
+                    ) : showActions ? (
                       <button
                         onClick={() => onSelectUpdate && onSelectUpdate(item)}
                         className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-900 font-medium"
@@ -83,7 +98,7 @@ export default function UpdateTable({
                         <MessageSquare className="w-4 h-4" />
                         Feedback
                       </button>
-                    )}
+                    ) : null}
                   </td>
                 )}
               </tr>

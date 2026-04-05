@@ -7,6 +7,7 @@ import updateRoutes from "./routes/updateRoute.js";
 import feedbackRoutes from "./routes/feedbackRoute.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import adminRoutes from "./routes/adminRoute.js";
+import notificationRoutes from "./routes/notificationRoute.js";
 
 const app = express();
 
@@ -54,5 +55,6 @@ app.use("/api/updates", updateRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 export default app;

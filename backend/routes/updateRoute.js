@@ -5,6 +5,7 @@ import {
   createUpdate,
   getMyUpdates,
   getTeamUpdates,
+  editUpdate,
 } from "../controllers/updateController.js";
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get(
   authorizeRoles("MANAGER", "ADMIN"),
   getTeamUpdates
 );
+router.put("/:id", protect, authorizeRoles("EMPLOYEE"), editUpdate);
 
 export default router;

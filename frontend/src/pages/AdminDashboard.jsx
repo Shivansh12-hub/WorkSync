@@ -328,11 +328,13 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900">System Settings</h2>
             <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
               {settings.length > 0 ? (
-                settings.map((setting) => (
-                  <div
-                    key={setting.key}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                  >
+                settings
+                  .filter((setting) => setting.key !== "max_daily_updates")
+                  .map((setting) => (
+                    <div
+                      key={setting.key}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
                     <div>
                       <h3 className="font-medium text-gray-900">
                         {setting.description || setting.key}
