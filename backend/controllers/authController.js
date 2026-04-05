@@ -11,40 +11,51 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
-    console.log(`[REGISTER] Checking if user ${email} exists...`);
+    console.log(`[REGISTER] Processing registration for ${email}`);
     
-    const existing = await Promise.race([
-      User.findOne({ email }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Database query timeout")), 8000)
-      ),
-    ]);
-
-    if (existing) {
-      return res.status(400).json({ message: "User already exists" });
+    // Check if user exists
+    let existing;
+    try {
+      existing = await User.findOne({ email }).select("email");
+    } catch (dbErr) {
+      console.error("[REGISTER] Database error during findOne:", dbErr.message);
+      return res.status(503).json({
+        message: "Database connection issue. Please try again in a moment.",
+      });
     }
 
-    console.log(`[REGISTER] Hashing password for ${email}...`);
+    if (existing) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    console.log(`[REGISTER] Hashing password...`);
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log(`[REGISTER] Creating user ${email}...`);
-    const user = await Promise.race([
-      User.create({
-        name,
-        email,
+    console.log(`[REGISTER] Creating user document...`);
+    let user;
+    try {
+      user = await User.create({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         role: role || "EMPLOYEE",
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Database operation timeout")), 8000)
-      ),
-    ]);
+      });
+    } catch (dbErr) {
+      console.error("[REGISTER] Database error during create:", dbErr.message);
+      if (dbErr.code === 11000) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      return res.status(503).json({
+        message: "Database connection issue. Please try again.",
+      });
+    }
 
-    console.log(`[REGISTER] User ${email} created successfully`);
+    console.log(`[REGISTER] User created: ${user._id}`);
 
+    const token = generateToken(user);
     res.status(201).json({
       message: "User registered successfully",
-      token: generateToken(user),
+      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -53,14 +64,7 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[REGISTER ERROR]", error.message);
-    
-    if (error.message.includes("timeout")) {
-      return res.status(503).json({
-        message: "Database connection timeout. Please try again.",
-      });
-    }
-
+    console.error("[REGISTER ERROR]", error);
     res.status(500).json({
       message: error.message || "Registration failed",
     });
@@ -75,14 +79,17 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    console.log(`[LOGIN] Authenticating ${email}...`);
+    console.log(`[LOGIN] Processing login for ${email}`);
 
-    const user = await Promise.race([
-      User.findOne({ email }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Database query timeout")), 8000)
-      ),
-    ]);
+    let user;
+    try {
+      user = await User.findOne({ email: email.toLowerCase().trim() });
+    } catch (dbErr) {
+      console.error("[LOGIN] Database error:", dbErr.message);
+      return res.status(503).json({
+        message: "Database connection issue. Please try again.",
+      });
+    }
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -90,14 +97,15 @@ export const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid password" });
     }
 
     console.log(`[LOGIN] Login successful for ${email}`);
 
+    const token = generateToken(user);
     res.json({
       message: "Login successful",
-      token: generateToken(user),
+      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -106,14 +114,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[LOGIN ERROR]", error.message);
-
-    if (error.message.includes("timeout")) {
-      return res.status(503).json({
-        message: "Database connection timeout. Please try again.",
-      });
-    }
-
+    console.error("[LOGIN ERROR]", error);
     res.status(500).json({
       message: error.message || "Login failed",
     });

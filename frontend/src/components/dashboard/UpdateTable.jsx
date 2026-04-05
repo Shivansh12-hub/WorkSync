@@ -1,4 +1,11 @@
-export default function UpdateTable({ updates }) {
+import { MessageSquare, Eye } from "lucide-react";
+
+export default function UpdateTable({
+  updates,
+  onSelectUpdate,
+  showActions,
+  showFeedbackButton,
+}) {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString();
   };
@@ -16,6 +23,8 @@ export default function UpdateTable({ updates }) {
     }
   };
 
+  const showActionColumn = showActions || showFeedbackButton;
+
   return (
     <div className="bg-white shadow rounded-xl p-5 mt-6 overflow-x-auto">
       <h2 className="text-xl font-semibold mb-4">Updates</h2>
@@ -31,12 +40,18 @@ export default function UpdateTable({ updates }) {
               <th className="text-center py-3 px-2">Hours</th>
               <th className="text-center py-3 px-2">Status</th>
               <th className="text-center py-3 px-2">Date</th>
+              {showActionColumn && <th className="text-center py-3 px-2">Action</th>}
             </tr>
           </thead>
 
           <tbody>
             {updates?.map((item) => (
-              <tr key={item._id} className="border-b hover:bg-gray-50">
+              <tr
+                key={item._id}
+                className={`border-b ${
+                  showActionColumn ? "hover:bg-gray-50 cursor-pointer" : ""
+                }`}
+              >
                 <td className="py-3 px-2">
                   <span className="font-medium">{item.userId?.name || "N/A"}</span>
                 </td>
@@ -50,6 +65,27 @@ export default function UpdateTable({ updates }) {
                 <td className="text-center py-3 px-2 text-sm">
                   {formatDate(item.createdAt)}
                 </td>
+                {showActionColumn && (
+                  <td className="text-center py-3 px-2">
+                    {showFeedbackButton ? (
+                      <button
+                        onClick={() => onSelectUpdate && onSelectUpdate(item)}
+                        className="inline-flex items-center gap-2 text-green-600 hover:text-green-900 font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Feedback
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onSelectUpdate && onSelectUpdate(item)}
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-900 font-medium"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Feedback
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

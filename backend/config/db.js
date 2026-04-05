@@ -8,18 +8,33 @@ const connectDB = async () => {
 
   try {
     console.log("Attempting MongoDB connection...");
+    console.log("URI:", process.env.MONGO_URI.substring(0, 50) + "...");
+    
+    // Disable Mongoose buffering to fail fast
+    mongoose.set("bufferCommands", false);
     
     await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 60000,
+      maxPoolSize: 20,
+      minPoolSize: 5,
       retryWrites: true,
+      retryReads: true,
+      connectTimeoutMS: 10000,
+      family: 4, // Use IPv4
     });
     
     console.log("✅ MongoDB connected successfully");
+    console.log("Connection state:", mongoose.connection.readyState);
     
     mongoose.connection.on("disconnected", () => {
-      console.warn("⚠️  MongoDB disconnected, attempting to reconnect...");
+      console.warn("⚠️  MongoDB disconnected");
+      mongoose.set("bufferCommands", false);
+    });
+    
+    mongoose.connection.on("reconnected", () => {
+      console.log("✅ MongoDB reconnected");
+      mongoose.set("bufferCommands", true);
     });
     
     mongoose.connection.on("error", (err) => {
@@ -27,7 +42,7 @@ const connectDB = async () => {
     });
   } catch (error) {
     console.error("🔴 DB connection error:", error.message);
-    console.error("Make sure MongoDB Atlas is accessible and MONGO_URI is correct");
+    console.error("Troubleshooting: Check MONGO_URI and MongoDB Atlas network access");
     throw error;
   }
 };

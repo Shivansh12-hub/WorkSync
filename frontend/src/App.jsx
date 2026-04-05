@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { Toaster } from "sonner";
 
@@ -27,8 +28,17 @@ export default function App() {
           <Route
             path="/manager"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="MANAGER">
                 <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

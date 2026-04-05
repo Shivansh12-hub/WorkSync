@@ -28,6 +28,14 @@ const updateSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    archived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

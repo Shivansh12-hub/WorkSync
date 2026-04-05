@@ -20,7 +20,9 @@ const useAuthStore = create((set) => ({
         isLoading: false,
       });
 
-      if (res.data.user.role === "MANAGER") {
+      if (res.data.user.role === "ADMIN") {
+        navigate("/admin");
+      } else if (res.data.user.role === "MANAGER") {
         navigate("/manager");
       } else {
         navigate("/employee");
@@ -47,7 +49,9 @@ const useAuthStore = create((set) => ({
         isLoading: false,
       });
 
-      if (res.data.user.role === "MANAGER") {
+      if (res.data.user.role === "ADMIN") {
+        navigate("/admin");
+      } else if (res.data.user.role === "MANAGER") {
         navigate("/manager");
       } else {
         navigate("/employee");

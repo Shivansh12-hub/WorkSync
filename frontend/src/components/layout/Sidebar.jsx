@@ -21,7 +21,14 @@ export default function Sidebar() {
       </div>
 
       <nav className="space-y-4">
-        {user?.role === "MANAGER" ? (
+        {user?.role === "ADMIN" ? (
+          <Link
+            to="/admin"
+            className="block hover:bg-blue-700 px-3 py-2 rounded transition"
+          >
+            Admin Dashboard
+          </Link>
+        ) : user?.role === "MANAGER" ? (
           <Link
             to="/manager"
             className="block hover:bg-blue-700 px-3 py-2 rounded transition"
