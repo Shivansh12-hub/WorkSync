@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://worksync-t4n2.onrender.com/api",
   timeout: 15000, // 15 second timeout
 });
 
