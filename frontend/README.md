@@ -27,10 +27,23 @@ Frontend for the WorkSync employee-manager-admin workflow platform.
 	- Filter/search users
 	- Manage runtime settings
 
+## Admin and Manager login details
+
+Use the configured credentials from backend environment variables:
+
+- Manager account:
+	- Email: `123@gamil.com`
+	- Password: `123456Aa@`
+- Admin account:
+	- Email: `1@gmail.com`
+	- Password: `123456Aa@`
+
+These are configured in `../backend/.env` for your local setup.
+
 ## Prerequisites
 
 - Node.js 18+
-- Backend API running at `http://localhost:5000`
+- Backend API running at `https://worksync-t4n2.onrender.com`
 
 ## Local development
 
@@ -54,7 +67,7 @@ npm run dev
 
 API client is configured in `src/api/axios.js`.
 
-- Current base URL: `http://localhost:5000/api`
+- Current base URL: `https://worksync-t4n2.onrender.com/api`
 
 If backend host changes, update the `baseURL` in that file.
 
@@ -90,7 +103,7 @@ Notification bell supports:
 ## Troubleshooting
 
 - If dashboard shows stale/zero values, refresh page and verify backend is running.
-- If login fails with network error, confirm backend is reachable at `http://localhost:5000`.
+- If login fails with network error, confirm backend is reachable at `https://worksync-t4n2.onrender.com`.
 - If role-protected page redirects unexpectedly, clear local storage token and login again.
 
 ## Related backend checks
