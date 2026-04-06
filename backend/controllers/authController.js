@@ -1,15 +1,22 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import generateToken from "../utils/generateToken.js";
+import {
+  clearLoginFailures,
+  registerLoginFailure,
+  getLoginAttemptKey,
+} from "../utils/loginRateLimiter.js";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-
-    // Validate input
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required" });
+    if (String(req.body?.role || "").trim().toUpperCase() === "ADMIN") {
+      return res.status(403).json({
+        message: "Public registration as ADMIN is not allowed",
+      });
     }
+
+    const { name, email, password } = req.authPayload || {};
+    const role = "EMPLOYEE";
 
     console.log(`[REGISTER] Processing registration for ${email}`);
     
@@ -35,10 +42,10 @@ export const register = async (req, res) => {
     let user;
     try {
       user = await User.create({
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
+        name,
+        email,
         password: hashedPassword,
-        role: role || "EMPLOYEE",
+        role,
       });
     } catch (dbErr) {
       console.error("[REGISTER] Database error during create:", dbErr.message);
@@ -73,17 +80,14 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
-    }
+    const { email, password } = req.authPayload || {};
+    const loginKey = req.loginThrottleKey || getLoginAttemptKey(req.ip, email);
 
     console.log(`[LOGIN] Processing login for ${email}`);
 
     let user;
     try {
-      user = await User.findOne({ email: email.toLowerCase().trim() });
+      user = await User.findOne({ email });
     } catch (dbErr) {
       console.error("[LOGIN] Database error:", dbErr.message);
       return res.status(503).json({
@@ -92,15 +96,18 @@ export const login = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      registerLoginFailure(loginKey);
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid password" });
+      registerLoginFailure(loginKey);
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     console.log(`[LOGIN] Login successful for ${email}`);
+    clearLoginFailures(loginKey);
 
     const token = generateToken(user);
     res.json({

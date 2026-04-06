@@ -4,6 +4,10 @@ const fallbackClient = {
   isOpen: false,
   get: async () => null,
   setEx: async () => null,
+  del: async () => 0,
+  scanIterator: async function* () {
+    // no-op iterator when Redis is unavailable
+  },
 };
 
 let redisClient = fallbackClient;

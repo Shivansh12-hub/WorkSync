@@ -1,13 +1,28 @@
 import Notification from "../models/notificationModel.js";
+import redisClient from "../utils/redisClient.js";
+import { cacheKeys } from "../utils/cacheKeys.js";
+import { invalidateCacheByPrefix } from "../utils/cacheInvalidation.js";
 
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
     const { unreadOnly } = req.query;
+    const unreadOnlyFlag = unreadOnly === "true";
+    const cacheKey = cacheKeys.notifications({
+      userId,
+      unreadOnly: unreadOnlyFlag,
+    });
+
+    if (redisClient.isOpen) {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    }
 
     let filter = { userId };
 
-    if (unreadOnly === "true") {
+    if (unreadOnlyFlag) {
       filter.read = false;
     }
 
@@ -15,6 +30,10 @@ export const getNotifications = async (req, res) => {
       .populate("relatedUpdateId", "description hours status")
       .sort({ createdAt: -1 })
       .limit(50);
+
+    if (redisClient.isOpen) {
+      await redisClient.setEx(cacheKey, 60, JSON.stringify(notifications));
+    }
 
     res.json(notifications);
   } catch (error) {
@@ -40,6 +59,8 @@ export const markAsRead = async (req, res) => {
     notification.read = true;
     await notification.save();
 
+    await invalidateCacheByPrefix(`notifications:${userId}:`);
+
     res.json(notification);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -51,6 +72,7 @@ export const markAllAsRead = async (req, res) => {
     const userId = req.user.id;
 
     await Notification.updateMany({ userId }, { read: true });
+    await invalidateCacheByPrefix(`notifications:${userId}:`);
 
     res.json({ message: "All notifications marked as read" });
   } catch (error) {

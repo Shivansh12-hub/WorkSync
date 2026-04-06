@@ -14,6 +14,10 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showUserForm, setShowUserForm] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    role: "",
+  });
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,11 +31,16 @@ export default function AdminDashboard() {
     fetchAdminData();
   }, []);
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (activeFilters = filters) => {
     try {
       setLoading(true);
+      const params = new URLSearchParams();
+      if (activeFilters.search) params.append("search", activeFilters.search);
+      if (activeFilters.role) params.append("role", activeFilters.role);
+
+      const queryString = params.toString();
       const [usersRes, settingsRes, statsRes] = await Promise.all([
-        axios.get("/admin/users"),
+        axios.get(`/admin/users${queryString ? `?${queryString}` : ""}`),
         axios.get("/admin/settings"),
         axios.get("/admin/stats"),
       ]);
@@ -47,6 +56,26 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleApplyFilters = () => {
+    fetchAdminData(filters);
+  };
+
+  const handleClearFilters = () => {
+    const clearedFilters = { search: "", role: "" };
+    setFilters(clearedFilters);
+    fetchAdminData(clearedFilters);
+  };
+
+  const hasActiveFilters = filters.search || filters.role;
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -160,6 +189,61 @@ export default function AdminDashboard() {
                 <Plus className="w-4 h-4" />
                 Add User
               </button>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Search
+                  </label>
+                  <input
+                    type="text"
+                    name="search"
+                    value={filters.search}
+                    onChange={handleFilterChange}
+                    placeholder="Search by name or email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role
+                  </label>
+                  <select
+                    name="role"
+                    value={filters.role}
+                    onChange={handleFilterChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Roles</option>
+                    <option value="EMPLOYEE">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleApplyFilters}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  Apply Filters
+                </button>
+                <button
+                  onClick={handleClearFilters}
+                  className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition"
+                >
+                  Clear Filters
+                </button>
+                {hasActiveFilters && (
+                  <span className="self-center text-sm text-blue-700 font-medium">
+                    Filters Active
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Create User Form */}

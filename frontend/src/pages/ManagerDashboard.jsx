@@ -2,9 +2,21 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import UpdateTable from "../components/dashboard/UpdateTable";
+import StatsCard from "../components/dashboard/StatsCard";
 import FeedbackForm from "../components/forms/FeedbackForm";
 import { toast } from "sonner";
 import { X, MessageCircle, Filter } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export default function ManagerDashboard() {
   const defaultFilters = {
@@ -24,16 +36,43 @@ export default function ManagerDashboard() {
   const [filters, setFilters] = useState(defaultFilters);
   const [appliedFilters, setAppliedFilters] = useState(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
+  const [teamMetrics, setTeamMetrics] = useState({ summary: {}, trends: [] });
+  const [metricsLoading, setMetricsLoading] = useState(false);
 
   useEffect(() => {
     fetchTeamUpdates();
     fetchEmployees();
+    fetchTeamMetrics();
   }, []);
+
+  const fetchTeamMetrics = async (activeFilters = appliedFilters) => {
+    try {
+      setMetricsLoading(true);
+      const params = new URLSearchParams();
+
+      if (activeFilters.employeeId) params.append("employeeId", activeFilters.employeeId);
+      if (activeFilters.dateFrom) params.append("dateFrom", activeFilters.dateFrom);
+      if (activeFilters.dateTo) params.append("dateTo", activeFilters.dateTo);
+
+      const queryString = params.toString();
+      const res = await api.get(`/dashboard/team-metrics${queryString ? `?${queryString}` : ""}`);
+      const summary = res.data?.summary || {};
+      const trends = Array.isArray(res.data?.trends) ? res.data.trends : [];
+
+      setTeamMetrics({ summary, trends });
+    } catch (error) {
+      console.error("Error fetching team metrics:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch team metrics");
+      setTeamMetrics({ summary: {}, trends: [] });
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
-      const res = await api.get("/admin/users");
-      const emps = res.data.users?.filter((u) => u.role === "EMPLOYEE") || [];
+      const res = await api.get("/updates/employees");
+      const emps = Array.isArray(res.data?.users) ? res.data.users : [];
       setEmployees(emps);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -54,7 +93,11 @@ export default function ManagerDashboard() {
       console.log("Sending filters to backend:", { activeFilters, queryString });
 
       const res = await api.get(`/updates/team?${queryString}`);
-      const serverUpdates = Array.isArray(res.data) ? res.data : [];
+      const serverUpdates = Array.isArray(res.data?.updates)
+        ? res.data.updates
+        : Array.isArray(res.data)
+        ? res.data
+        : [];
 
       // Defensive client-side filtering to keep UI consistent even if backend ignores a query param.
       const filteredUpdates = serverUpdates.filter((update) => {
@@ -104,11 +147,13 @@ export default function ManagerDashboard() {
     setFilters(nextFilters);
     setAppliedFilters(nextFilters);
     fetchTeamUpdates(nextFilters);
+    fetchTeamMetrics(nextFilters);
   };
 
   const handleApplyFilters = () => {
     fetchTeamUpdates(filters);
     setAppliedFilters(filters);
+    fetchTeamMetrics(filters);
     setShowFilters(false);
   };
 
@@ -117,6 +162,7 @@ export default function ManagerDashboard() {
     setFilters(clearedFilters);
     setAppliedFilters(clearedFilters);
     fetchTeamUpdates(clearedFilters);
+    fetchTeamMetrics(clearedFilters);
     setShowFilters(false);
   };
 
@@ -172,6 +218,109 @@ export default function ManagerDashboard() {
           <div className="text-center py-10">Loading...</div>
         ) : (
           <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
+              <StatsCard title="Team Size" value={teamMetrics.summary.teamSize || 0} />
+              <StatsCard title="Total Updates" value={teamMetrics.summary.totalUpdates || 0} />
+              <StatsCard title="Completed" value={teamMetrics.summary.completedUpdates || 0} />
+              <StatsCard title="Blocked" value={teamMetrics.summary.blockedUpdates || 0} />
+              <StatsCard
+                title="Unresolved Blockers"
+                value={teamMetrics.summary.unresolvedBlockers || 0}
+              />
+              <StatsCard
+                title="Completion Rate"
+                value={`${teamMetrics.summary.completionRate || 0}%`}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+              <StatsCard
+                title="Daily Submission %"
+                value={`${teamMetrics.kpis?.dailySubmissionPercentage || 0}%`}
+              />
+              <StatsCard
+                title="Engagement Rate"
+                value={`${teamMetrics.kpis?.userEngagementRate || 0}%`}
+              />
+              <StatsCard
+                title="Blocker Reduction %"
+                value={`${teamMetrics.kpis?.unresolvedBlockerReductionPercentage || 0}%`}
+              />
+              <StatsCard
+                title="Manager Interactions/Day"
+                value={teamMetrics.kpis?.managerInteractionFrequencyPerDay || 0}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-xl shadow p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Time-Based Completion Trend
+                </h3>
+                <div className="h-64">
+                  {metricsLoading ? (
+                    <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                      Loading metrics...
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={teamMetrics.trends}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="completed"
+                          stroke="#16a34a"
+                          strokeWidth={2}
+                          name="Completed"
+                        />
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="completionRate"
+                          stroke="#2563eb"
+                          strokeWidth={2}
+                          name="Completion %"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Blocked vs Unresolved Trend
+                </h3>
+                <div className="h-64">
+                  {metricsLoading ? (
+                    <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                      Loading metrics...
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={teamMetrics.trends}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <Bar dataKey="blocked" fill="#f97316" name="Blocked" />
+                        <Bar
+                          dataKey="unresolvedBlocked"
+                          fill="#dc2626"
+                          name="Unresolved"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
                 Team Updates
@@ -194,7 +343,10 @@ export default function ManagerDashboard() {
                   Filters
                 </button>
                 <button
-                  onClick={() => fetchTeamUpdates(appliedFilters)}
+                  onClick={() => {
+                    fetchTeamUpdates(appliedFilters);
+                    fetchTeamMetrics(appliedFilters);
+                  }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                 >
                   Refresh

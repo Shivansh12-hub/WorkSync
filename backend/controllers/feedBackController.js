@@ -1,4 +1,10 @@
 import Feedback from "../models/feedbackModel.js";
+import Update from "../models/updateModel.js";
+import {
+  createNotificationsForUsers,
+  resolveInAppDelivery,
+} from "../utils/notificationService.js";
+import { invalidateCacheByPrefix } from "../utils/cacheInvalidation.js";
 
 export const addFeedback = async (req, res) => {
   try {
@@ -12,6 +18,27 @@ export const addFeedback = async (req, res) => {
 
     // Populate manager info before returning
     await feedback.populate("managerId", "name email");
+
+    const update = await Update.findById(updateId).select("userId description").lean();
+    if (update?.userId) {
+      const created = await createNotificationsForUsers({
+        userIds: [update.userId],
+        type: "FEEDBACK_RECEIVED",
+        message: `Your update received feedback: ${update.description}`,
+        relatedUpdateId: updateId,
+        channels: {
+          inApp: true,
+          email: process.env.ENABLE_EMAIL_NOTIFICATIONS === "true",
+          push: process.env.ENABLE_PUSH_NOTIFICATIONS === "true",
+        },
+        metadata: {
+          source: "feedback",
+        },
+      });
+      await resolveInAppDelivery(created.map((row) => row._id));
+    }
+
+    await invalidateCacheByPrefix("dashboard:team-metrics:");
 
     res.status(201).json(feedback);
   } catch (error) {

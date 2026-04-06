@@ -1,16 +1,104 @@
-# React + Vite
+# WorkSync Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend for the WorkSync employee-manager-admin workflow platform.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React + Vite
+- Axios for API communication
+- Zustand for auth state
+- Recharts for manager analytics charts
+- Sonner for toast notifications
 
-## React Compiler
+## Role-based experience
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Employee:
+	- Register/login
+	- Submit and edit daily updates
+	- View own update history
+	- View manager feedback and notifications
+- Manager:
+	- View team updates
+	- Apply filters by status, employee, and date
+	- Submit feedback on team updates
+	- View team metrics cards and trend charts
+- Admin:
+	- Manage users (create, update, delete)
+	- Filter/search users
+	- Manage runtime settings
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Node.js 18+
+- Backend API running at `http://localhost:5000`
+
+## Local development
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start dev server:
+
+```bash
+npm run dev
+```
+
+3. Open app:
+
+- `http://localhost:5173`
+
+## API configuration
+
+API client is configured in `src/api/axios.js`.
+
+- Current base URL: `http://localhost:5000/api`
+
+If backend host changes, update the `baseURL` in that file.
+
+## Key UI pages
+
+- `src/pages/Login.jsx`
+- `src/pages/Register.jsx`
+- `src/pages/EmployeeDashboard.jsx`
+- `src/pages/ManagerDashboard.jsx`
+- `src/pages/AdminDashboard.jsx`
+
+## Manager analytics notes
+
+Manager dashboard reads:
+
+- `GET /api/dashboard/team-metrics`
+
+It renders:
+
+- KPI cards (team size, total updates, completion, blockers)
+- Operational KPIs (daily submission %, engagement, blocker reduction, interactions/day)
+- Time-series charts for completion and blocked/unresolved trends
+
+## Notifications
+
+Notification bell supports:
+
+- Missed update alerts
+- Blocked task alerts
+- Feedback received alerts
+- Reminder alerts
+
+## Troubleshooting
+
+- If dashboard shows stale/zero values, refresh page and verify backend is running.
+- If login fails with network error, confirm backend is reachable at `http://localhost:5000`.
+- If role-protected page redirects unexpectedly, clear local storage token and login again.
+
+## Related backend checks
+
+From the backend folder, these scripts validate end-to-end behavior:
+
+```bash
+node load-tests/role-workflow-check.js
+node load-tests/smoke-check.js
+node load-tests/manager-flow-check.js
+```

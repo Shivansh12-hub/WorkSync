@@ -5,6 +5,7 @@ import {
   createUpdate,
   getMyUpdates,
   getTeamUpdates,
+  getTeamEmployees,
   editUpdate,
 } from "../controllers/updateController.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.post("/", protect, authorizeRoles("EMPLOYEE"), createUpdate);
 router.get("/me", protect, getMyUpdates);
+router.get("/employees", protect, authorizeRoles("MANAGER", "ADMIN"), getTeamEmployees);
 router.get(
   "/team",
   protect,

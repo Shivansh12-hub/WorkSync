@@ -12,7 +12,6 @@ WorkSync is a comprehensive project management and work tracking system with thr
 - **Endpoint**: `POST /api/updates/`
 - **Features**:
   - Submit daily work descriptions
-  - Log hours worked (with min/max validation)
   - Set update status (COMPLETED, IN_PROGRESS, BLOCKED)
   - Real-time form validation
   - Toast notifications for success/error
@@ -100,7 +99,7 @@ WorkSync is a comprehensive project management and work tracking system with thr
   - `DELETE /api/admin/users/:id` - Delete user account
 
 **Features**:
-- ✓ View all users with pagination
+- ✓ View all users
 - ✓ Search users by name/email
 - ✓ Filter by role (EMPLOYEE, MANAGER, ADMIN)
 - ✓ Create new users (set role at creation)
@@ -117,7 +116,7 @@ WorkSync is a comprehensive project management and work tracking system with thr
   - `PUT /api/admin/settings/:key` - Update specific setting
 
 **Configurable Settings**:
-- `max_daily_updates` - Maximum updates per employee per day (default: 5)
+- `max_daily_updates` - Legacy setting retained in admin settings, but runtime now enforces a strict single update per day
 - `min_update_hours` - Minimum hours per update (default: 0.5)
 - `max_update_hours` - Maximum hours per update (default: 12)
 - `feedback_required` - Require manager feedback (default: true)
@@ -197,6 +196,10 @@ WorkSync is a comprehensive project management and work tracking system with thr
   description: String,
   hours: Number,
   status: String (COMPLETED, IN_PROGRESS, BLOCKED),
+  date: Timestamp,
+  version: Number,
+  archived: Boolean,
+  archivedAt: Timestamp | null,
   createdAt: Timestamp,
   updatedAt: Timestamp
 }
@@ -209,6 +212,20 @@ WorkSync is a comprehensive project management and work tracking system with thr
   updateId: ObjectId,
   managerId: ObjectId,
   comment: String,
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+### Notification Model
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  type: String (MISSED_UPDATE, BLOCKED_TASK, FEEDBACK_RECEIVED),
+  message: String,
+  relatedUpdateId: ObjectId | null,
+  read: Boolean,
   createdAt: Timestamp,
   updatedAt: Timestamp
 }
@@ -280,7 +297,10 @@ frontend/src/
 │   │   └── UpdateTable.jsx
 │   └── forms/
 │       ├── UpdateForm.jsx
-│       └── FeedbackForm.jsx
+│       ├── FeedbackForm.jsx
+│       └── EditUpdateForm.jsx
+│   └── notifications/
+│       └── NotificationBell.jsx
 ├── routes/
 │   └── ProtectedRoute.jsx
 ├── store/
@@ -304,6 +324,11 @@ frontend/src/
 
 ### Feedback
 - `POST /api/feedback` - Add feedback (Manager+)
+
+### Notifications
+- `GET /api/notifications` - Get current user notifications
+- `PUT /api/notifications/:id/read` - Mark notification as read
+- `PUT /api/notifications/mark-all/read` - Mark all notifications as read
 
 ### Dashboard
 - `GET /api/dashboard/stats` - Get user stats
@@ -378,4 +403,27 @@ frontend/src/
 - Admin operations have proper validation
 - Role-based navigation prevents unauthorized access
 - Empty states handled gracefully across all pages
+
+---
+
+## 📌 Current Gap Analysis
+
+### Implemented and verified
+- Strict single update per day enforcement
+- Edit update workflow with version tracking
+- Manager team filters by status, employee, and date
+- Missed-update alerts via scheduled job
+- Notification model and notification bell UI
+- Blocked-task notifications
+- Feedback-received notifications
+- Admin user search and role filtering
+
+### Still outside the current build
+- PostgreSQL migration requested by the original specification
+- Formal load testing with documented <300ms response time evidence
+- 1000-user concurrency validation
+- High-availability monitoring stack such as Prometheus/PM2/alerting
+
+### Report correction
+- The report previously described `max_daily_updates` as configurable in runtime. The app now enforces a hard limit of one update per day, so the documentation should treat that setting as legacy/admin-visible only.
 

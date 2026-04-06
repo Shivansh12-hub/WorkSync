@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import User from "../models/userModel.js";
 import Update from "../models/updateModel.js";
-import Notification from "../models/notificationModel.js";
+import { createNotificationsForUsers, resolveInAppDelivery } from "../utils/notificationService.js";
 
 export const startMissedUpdateAlertJob = () => {
   // Run daily at 8 PM (20:00)
@@ -27,21 +27,21 @@ export const startMissedUpdateAlertJob = () => {
 
         // If no update submitted today, create a missed update notification
         if (!todayUpdate) {
-          const existingNotification = await Notification.findOne({
-            userId: employee._id,
+          const created = await createNotificationsForUsers({
+            userIds: [employee._id],
             type: "MISSED_UPDATE",
-            createdAt: { $gte: today, $lt: tomorrow },
-          }).lean();
-
-          // Only create if notification doesn't exist for today
-          if (!existingNotification) {
-            await Notification.create({
-              userId: employee._id,
-              type: "MISSED_UPDATE",
-              message: "You haven't submitted your daily update yet. Please submit your work update.",
-              read: false,
-            });
-          }
+            message: "You haven't submitted your daily update yet. Please submit your work update.",
+            channels: {
+              inApp: true,
+              email: process.env.ENABLE_EMAIL_NOTIFICATIONS === "true",
+              push: process.env.ENABLE_PUSH_NOTIFICATIONS === "true",
+            },
+            metadata: {
+              source: "missed-update-alert",
+            },
+            dedupeKeyBase: `missed-update:${today.toISOString().slice(0, 10)}`,
+          });
+          await resolveInAppDelivery(created.map((row) => row._id));
         }
       }
 

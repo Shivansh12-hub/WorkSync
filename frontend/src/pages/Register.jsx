@@ -9,7 +9,6 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    role: "EMPLOYEE",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -38,7 +37,11 @@ export default function Register() {
 
     try {
       const toastId = toast.loading("Creating account...");
-      const res = await api.post("/auth/register", form);
+      const payload = {
+        ...form,
+        role: "EMPLOYEE",
+      };
+      const res = await api.post("/auth/register", payload);
       
       toast.dismiss(toastId);
       toast.success("Registration successful!");
@@ -66,7 +69,7 @@ export default function Register() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex justify-center items-center min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
       <form
         onSubmit={handleSubmit}
         className="bg-white shadow-2xl rounded-xl p-8 w-96"
@@ -128,25 +131,12 @@ export default function Register() {
             )}
           </div>
 
-          <div>
-            <select
-              value={form.role}
-              onChange={(e) =>
-                setForm({ ...form, role: e.target.value })
-              }
-              className="w-full border-2 border-gray-300 p-3 rounded-lg focus:outline-none focus:border-blue-500"
-            >
-              <option value="EMPLOYEE">Employee</option>
-              <option value="MANAGER">Manager</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </div>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed mt-6 font-semibold transition"
+          className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed mt-6 font-semibold transition"
         >
           {loading ? "Creating Account..." : "Register"}
         </button>

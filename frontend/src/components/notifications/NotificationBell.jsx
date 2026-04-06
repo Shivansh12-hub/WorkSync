@@ -49,6 +49,8 @@ export default function NotificationBell() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
+      case "REMINDER":
+        return "🔔";
       case "MISSED_UPDATE":
         return "⏰";
       case "BLOCKED_TASK":
@@ -63,6 +65,8 @@ export default function NotificationBell() {
   const getNotificationColor = (type, read) => {
     if (read) return "bg-gray-50";
     switch (type) {
+      case "REMINDER":
+        return "bg-indigo-50";
       case "MISSED_UPDATE":
         return "bg-yellow-50";
       case "BLOCKED_TASK":
@@ -126,13 +130,13 @@ export default function NotificationBell() {
                       <span className="text-xl">{getNotificationIcon(notification.type)}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2">
-                          <p className="text-sm font-medium text-gray-900 break-words">
+                          <p className="text-sm font-medium text-gray-900 wrap-break-word">
                             {notification.message}
                           </p>
                           {!notification.read && (
                             <button
                               onClick={() => handleMarkAsRead(notification._id)}
-                              className="flex-shrink-0 text-blue-600 hover:text-blue-900"
+                              className="shrink-0 text-blue-600 hover:text-blue-900"
                               title="Mark as read"
                             >
                               <Check className="w-4 h-4" />

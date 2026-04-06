@@ -23,7 +23,8 @@ export const getAllUsers = async (req, res) => {
       count: users.length,
       users,
     });
-  } catch (error) {
+  }
+  catch (error) {
     console.error("[ADMIN] Get users error:", error);
     res.status(500).json({ message: error.message });
   }
@@ -103,7 +104,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Create user (admin only)
+// Create user 
 export const createUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
