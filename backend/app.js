@@ -15,6 +15,30 @@ import notificationRoutes from "./routes/notificationRoute.js";
 
 const app = express();
 
+const configuredOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  if (configuredOrigins.includes(origin)) {
+    return true;
+  }
+
+  // Allow Vercel preview and production frontend URLs.
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^http:\/\/localhost:(5173|3000)$/i.test(origin)) {
+    return true;
+  }
+
+  return false;
+};
+
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(securityHeaders);
@@ -22,7 +46,12 @@ app.use(requestLogger);
 app.use(metricsMiddleware);
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim()) || true,
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
