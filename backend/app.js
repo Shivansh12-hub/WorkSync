@@ -30,6 +30,18 @@ app.use(
 );
 app.use(express.json());
 
+// Root probe endpoint for platforms that send HEAD/GET requests to '/'.
+app.get("/", (req, res) => {
+  res.json({
+    service: "worksync-backend",
+    status: "ok",
+  });
+});
+
+app.head("/", (req, res) => {
+  res.status(200).end();
+});
+
 app.get("/metrics", metricsHandler);
 
 app.get("/readyz", async (req, res) => {
